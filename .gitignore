@@ -1,0 +1,29 @@
+
+# OpenTofu / Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Credenciais e chaves
+*.pem
+*.key
+id_rsa
+id_ed25519
+.env
+.env.*
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

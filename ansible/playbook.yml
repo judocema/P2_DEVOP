@@ -1,0 +1,89 @@
+
+---
+- name: Preparar e implantar a API e o banco de dados na VM2
+  hosts: api
+  become: true
+
+  tasks:
+    - name: Garantir que o Docker esteja instalado
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Iniciar e habilitar Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Criar diretorio da API
+      ansible.builtin.file:
+        path: /opt/cadastro-produtos/api
+        state: directory
+        mode: "0755"
+
+    - name: Copiar arquivos da API
+      ansible.builtin.copy:
+        src: ../api/
+        dest: /opt/cadastro-produtos/api/
+        mode: preserve
+
+    - name: Iniciar API e MySQL com Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up -d --no-build
+        chdir: /opt/cadastro-produtos/api
+
+- name: Preparar e implantar a aplicacao Web na VM1
+  hosts: web
+  become: true
+
+  tasks:
+    - name: Garantir que o Docker esteja instalado
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Iniciar e habilitar Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Criar diretorio da aplicacao Web
+      ansible.builtin.file:
+        path: /opt/cadastro-produtos/app
+        state: directory
+        mode: "0755"
+
+    - name: Copiar arquivos da aplicacao Web
+      ansible.builtin.copy:
+        src: ../app/
+        dest: /opt/cadastro-produtos/app/
+        mode: preserve
+
+    - name: Verificar imagem Node.js transferida
+      ansible.builtin.command:
+        cmd: docker image inspect api-api:latest
+      changed_when: false
+
+    - name: Construir imagem da aplicacao Web
+      ansible.builtin.command:
+        cmd: docker build --pull=false -t cadastro-produtos-web:latest .
+        chdir: /opt/cadastro-produtos/app
+
+    - name: Remover container Web anterior, se existir
+      ansible.builtin.command:
+        cmd: docker rm -f cadastro-produtos-web
+      failed_when: false
+      changed_when: false
+
+    - name: Iniciar container da aplicacao Web
+      ansible.builtin.command:
+        cmd: docker run -d --name cadastro-produtos-web --restart unless-stopped -p 80:80 cadastro-produtos-web:latest
+
